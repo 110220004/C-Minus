@@ -44,13 +44,7 @@ print(edad);
 - Se validan errores semanticos basicos (redeclaracion, variable no declarada, tipo incompatible, etc.).
 - Esta base esta pensada para crecer en futuras entregas (if, while, funciones, comparaciones, etc.).
 
-## Entrega en GitHub
-Para subir el proyecto a tu repositorio:
-```bash
-git init
-git add .
-git commit -m "Evaluacion 2: base de lenguaje C--"
-git branch -M main
-git remote add origin <URL_DE_TU_REPO>
-git push -u origin main
-```
+## Planes para siguiente version de C-Minus
+-Comparaciones y operadores logicos : Permitir expresiones condicionales reales para toma de decisiones 
+-Sentencias if/else: Ejecutar bloques en funcion de condiciones booleanas.
+-Ciclos while y for: Agregar repeticion controlada para programas mas completos y entre otras cosas.
