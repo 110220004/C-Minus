@@ -1,0 +1,17 @@
+// Programa base de C--
+int edad = 20;
+float promedio = 91.5;
+string nombre = "Wendell";
+bool activo = true;
+
+print("Nombre: " + nombre);
+print("Edad: " + edad);
+print("Promedio: " + promedio);
+print("Activo: " + activo);
+
+/* Asignaciones */
+edad = edad + 1;
+promedio = promedio + 0.5;
+
+print("Edad actualizada: " + edad);
+print("Promedio actualizado: " + promedio);

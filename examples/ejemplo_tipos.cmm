@@ -1,0 +1,7 @@
+int edad = 21;
+float nota = 95.5;
+bool activo = true;
+string nombre = "Ana";
+print("Nombre: " + nombre);
+print("Activo: " + activo);
+print("Nota final: " + nota);

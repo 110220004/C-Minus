@@ -1,0 +1,4 @@
+float promedio = 0.0;
+int parcial = 18;
+promedio = parcial;
+print("Promedio: " + promedio);
