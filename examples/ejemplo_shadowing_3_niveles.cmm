@@ -1,0 +1,23 @@
+int x = 1;
+print("Global x = " + x);
+
+{
+    int x = 10;
+    print("Nivel 1 x = " + x);
+
+    {
+        int x = 100;
+        print("Nivel 2 x = " + x);
+
+        {
+            int x = 1000;
+            print("Nivel 3 x = " + x);
+        }
+
+        print("Regreso a Nivel 2 x = " + x);
+    }
+
+    print("Regreso a Nivel 1 x = " + x);
+}
+
+print("Regreso Global x = " + x);

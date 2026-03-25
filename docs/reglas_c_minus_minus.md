@@ -83,7 +83,8 @@ print("Nombre: " + nombre);
 ## 8. Reglas semanticas basicas
 - No se puede usar una variable sin declararla.
 - No se puede usar una variable sin inicializar.
-- No se puede redeclarar una variable con el mismo nombre.
+- No se puede redeclarar una variable con el mismo nombre dentro del mismo ambito.
+- Se permite shadowing: una variable interna puede usar el mismo nombre de una externa.
 - La asignacion debe respetar el tipo declarado.
 - Se permite convertir `int` a `float` al asignar a una variable `float`.
 
@@ -94,6 +95,7 @@ Sentencias soportadas:
 - Declaracion
 - Asignacion
 - Impresion (`print`)
+- Bloque (`{ ... }`) con ambito local
 
 ## 10. EBNF simplificada
 ```ebnf
@@ -101,7 +103,10 @@ programa      = { sentencia } EOF ;
 
 sentencia     = declaracion ";"
               | asignacion ";"
-              | impresion ";" ;
+              | impresion ";"
+              | bloque ;
+
+bloque        = "{" { sentencia } "}" ;
 
 declaracion   = tipo identificador [ "=" expresion ] ;
 asignacion    = identificador "=" expresion ;

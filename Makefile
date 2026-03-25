@@ -6,11 +6,14 @@ TEST_OK = \
 	examples/programa_basico.cmm \
 	examples/ejemplo_aritmetica.cmm \
 	examples/ejemplo_tipos.cmm \
-	examples/ejemplo_conversion.cmm
+	examples/ejemplo_conversion.cmm \
+	examples/ejemplo_shadowing_simple.cmm \
+	examples/ejemplo_shadowing_3_niveles.cmm
 TEST_ERR = \
 	examples/error_tipo.cmm \
 	examples/error_no_inicializada.cmm \
-	examples/error_division_cero.cmm
+	examples/error_division_cero.cmm \
+	examples/error_redeclaracion_mismo_ambito.cmm
 
 .PHONY: all run test clean
 

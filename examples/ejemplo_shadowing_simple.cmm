@@ -1,0 +1,9 @@
+int x = 5;
+print("Antes del bloque: " + x);
+
+{
+    int x = 20;
+    print("Dentro del bloque: " + x);
+}
+
+print("Despues del bloque: " + x);

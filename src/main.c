@@ -23,6 +23,8 @@ typedef enum {
     TOK_MINUS,
     TOK_STAR,
     TOK_SLASH,
+    TOK_LBRACE,
+    TOK_RBRACE,
     TOK_KW_INT,
     TOK_KW_FLOAT,
     TOK_KW_STRING,
@@ -77,6 +79,12 @@ typedef struct {
     Variable *items;
     size_t count;
     size_t capacity;
+} Scope;
+
+typedef struct {
+    Scope *scopes;
+    size_t count;
+    size_t capacity;
 } SymbolTable;
 
 typedef struct {
@@ -126,37 +134,109 @@ static void free_value(Value *v) {
 
 /* ---------------- Tabla de simbolos ---------------- */
 static void symbol_table_init(SymbolTable *table) {
-    table->items = NULL;
+    table->scopes = NULL;
     table->count = 0;
     table->capacity = 0;
+
+    /* Crea el ambito global por defecto. */
+    if (table->count == table->capacity) {
+        size_t new_capacity = table->capacity == 0 ? 4 : table->capacity * 2;
+        Scope *new_scopes = (Scope *)realloc(table->scopes, new_capacity * sizeof(Scope));
+        if (!new_scopes) {
+            fprintf(stderr, "Error: memoria insuficiente.\n");
+            exit(1);
+        }
+        table->scopes = new_scopes;
+        table->capacity = new_capacity;
+    }
+
+    Scope *global = &table->scopes[table->count++];
+    global->items = NULL;
+    global->count = 0;
+    global->capacity = 0;
 }
 
-static Variable *symbol_table_find(SymbolTable *table, const char *name) {
-    for (size_t i = 0; i < table->count; i++) {
-        if (strcmp(table->items[i].name, name) == 0) {
-            return &table->items[i];
+static Scope *symbol_table_current_scope(SymbolTable *table) {
+    if (table->count == 0) {
+        return NULL;
+    }
+    return &table->scopes[table->count - 1];
+}
+
+static Variable *scope_find(Scope *scope, const char *name) {
+    for (size_t i = 0; i < scope->count; i++) {
+        if (strcmp(scope->items[i].name, name) == 0) {
+            return &scope->items[i];
+        }
+    }
+    return NULL;
+}
+
+static void symbol_table_push_scope(SymbolTable *table) {
+    if (table->count == table->capacity) {
+        size_t new_capacity = table->capacity == 0 ? 4 : table->capacity * 2;
+        Scope *new_scopes = (Scope *)realloc(table->scopes, new_capacity * sizeof(Scope));
+        if (!new_scopes) {
+            fprintf(stderr, "Error: memoria insuficiente.\n");
+            exit(1);
+        }
+        table->scopes = new_scopes;
+        table->capacity = new_capacity;
+    }
+
+    Scope *scope = &table->scopes[table->count++];
+    scope->items = NULL;
+    scope->count = 0;
+    scope->capacity = 0;
+}
+
+static void symbol_table_pop_scope(SymbolTable *table) {
+    if (table->count == 0) {
+        return;
+    }
+
+    Scope *scope = &table->scopes[table->count - 1];
+    for (size_t i = 0; i < scope->count; i++) {
+        free(scope->items[i].name);
+        free_value(&scope->items[i].value);
+    }
+    free(scope->items);
+    table->count--;
+}
+
+static Variable *symbol_table_lookup(SymbolTable *table, const char *name) {
+    for (size_t i = table->count; i > 0; i--) {
+        Scope *scope = &table->scopes[i - 1];
+        Variable *v = scope_find(scope, name);
+        if (v) {
+            return v;
         }
     }
     return NULL;
 }
 
 static void symbol_table_add(SymbolTable *table, const char *name, ValueType type, int line, int col) {
-    if (symbol_table_find(table, name)) {
-        fatal_at(line, col, "variable redeclarada");
+    Scope *scope = symbol_table_current_scope(table);
+    if (!scope) {
+        fatal_at(line, col, "no hay ambito activo");
     }
 
-    if (table->count == table->capacity) {
-        size_t new_capacity = table->capacity == 0 ? 8 : table->capacity * 2;
-        Variable *new_items = (Variable *)realloc(table->items, new_capacity * sizeof(Variable));
+    if (scope_find(scope, name)) {
+        fatal_at(line, col, "variable redeclarada en el mismo ambito");
+    }
+
+    if (scope->count == scope->capacity) {
+        size_t new_capacity = scope->capacity == 0 ? 8 : scope->capacity * 2;
+        Variable *new_items = (Variable *)realloc(scope->items, new_capacity * sizeof(Variable));
         if (!new_items) {
             fprintf(stderr, "Error: memoria insuficiente.\n");
             exit(1);
         }
-        table->items = new_items;
-        table->capacity = new_capacity;
+        scope->items = new_items;
+        scope->capacity = new_capacity;
     }
 
-    Variable *v = &table->items[table->count++];
+    Variable *v = &scope->items[scope->count++];
     v->name = strdup_cmm(name);
     v->value.type = type;
     v->initialized = 0;
@@ -172,11 +252,10 @@ static void symbol_table_add(SymbolTable *table, const char *name, ValueType typ
 }
 
 static void symbol_table_free(SymbolTable *table) {
-    for (size_t i = 0; i < table->count; i++) {
-        free(table->items[i].name);
-        free_value(&table->items[i].value);
+    while (table->count > 0) {
+        symbol_table_pop_scope(table);
     }
-    free(table->items);
+    free(table->scopes);
 }
 
 /* ---------------- Lexer (analisis lexico) ---------------- */
@@ -329,6 +408,8 @@ static Token lexer_next_token(Lexer *lexer) {
         case '-': return make_token(lexer, TOK_MINUS, strdup_cmm("-"), line, col);
         case '*': return make_token(lexer, TOK_STAR, strdup_cmm("*"), line, col);
         case '/': return make_token(lexer, TOK_SLASH, strdup_cmm("/"), line, col);
+        case '{': return make_token(lexer, TOK_LBRACE, strdup_cmm("{"), line, col);
+        case '}': return make_token(lexer, TOK_RBRACE, strdup_cmm("}"), line, col);
         default: fatal_at(line, col, "caracter no valido");
     }
 
@@ -457,7 +538,7 @@ static Value parse_factor(Parser *parser) {
     if (t.type == TOK_IDENTIFIER) {
         char *name = strdup_cmm(t.lexeme);
         parser_advance(parser);
-        Variable *var = symbol_table_find(&parser->symbols, name);
+        Variable *var = symbol_table_lookup(&parser->symbols, name);
         if (!var) {
             free(name);
             fatal_at(t.line, t.col, "uso de variable no declarada");
@@ -628,6 +709,25 @@ static ValueType type_from_token(TokenType t, int line, int col) {
     return VAL_INT;
 }
 
+static void parse_statement(Parser *parser);
+
+/* Bloque: '{' {sentencias} '}' con apertura/cierre de ambito. */
+static void parse_block(Parser *parser) {
+    parser_expect(parser, TOK_LBRACE, "se esperaba '{'");
+    symbol_table_push_scope(&parser->symbols);
+
+    while (parser->lexer.current.type != TOK_RBRACE && parser->lexer.current.type != TOK_EOF) {
+        parse_statement(parser);
+    }
+
+    if (parser->lexer.current.type == TOK_EOF) {
+        fatal_at(parser->lexer.current.line, parser->lexer.current.col, "se esperaba '}' para cerrar bloque");
+    }
+
+    parser_expect(parser, TOK_RBRACE, "se esperaba '}'");
+    symbol_table_pop_scope(&parser->symbols);
+}
+
 /* Valida tipos y asigna un valor a la variable destino. */
 static void assign_to_variable(Variable *var, Value value, int line, int col) {
     if (var->value.type == VAL_INT) {
@@ -696,7 +796,7 @@ static void parse_declaration(Parser *parser) {
     parser_advance(parser);
 
     symbol_table_add(&parser->symbols, name_copy, declared_type, name_token.line, name_token.col);
-    Variable *var = symbol_table_find(&parser->symbols, name_copy);
+    Variable *var = symbol_table_lookup(&parser->symbols, name_copy);
     free(name_copy);
 
     if (parser_match(parser, TOK_ASSIGN)) {
@@ -714,7 +814,7 @@ static void parse_assignment(Parser *parser) {
     parser_advance(parser);
     parser_expect(parser, TOK_ASSIGN, "se esperaba '=' en asignacion");
 
-    Variable *var = symbol_table_find(&parser->symbols, name_copy);
+    Variable *var = symbol_table_lookup(&parser->symbols, name_copy);
     if (!var) {
         free(name_copy);
         fatal_at(name_token.line, name_token.col, "asignacion a variable no declarada");
@@ -750,6 +850,11 @@ static void parse_print(Parser *parser) {
 /* Dispatcher de sentencias soportadas en esta version. */
 static void parse_statement(Parser *parser) {
     TokenType t = parser->lexer.current.type;
+
+    if (t == TOK_LBRACE) {
+        parse_block(parser);
+        return;
+    }
 
     if (t == TOK_KW_INT || t == TOK_KW_FLOAT || t == TOK_KW_STRING || t == TOK_KW_BOOL) {
         parse_declaration(parser);
