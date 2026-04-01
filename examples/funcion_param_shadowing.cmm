@@ -1,0 +1,8 @@
+int n = 100;
+
+func id(n:int) -> int {
+    return n;
+}
+
+print(id(5));
+print(n);

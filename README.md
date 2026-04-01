@@ -8,11 +8,16 @@
 - Comentarios (`//` y `/* ... */`)
 - Bloques con ambitos anidados (`{ ... }`)
 - Shadowing entre ambitos (variable interna tiene prioridad)
+- Funciones (`func`), parametros tipados, llamada y `return`
+- Construccion de AST + ejecucion con interprete
 
 ## Estructura del proyecto
-- `src/main.c`: lexer + parser + ejecucion de C--
+- `src/main.c`: lexer + parser que construye AST
+- `src/ast.h`, `src/ast.c`: nodos del AST y liberacion de memoria
+- `src/interpreter.h`, `src/interpreter.c`: ejecutor del AST (2 pases)
+- `src/scope.h`, `src/scope.c`: manejo de scopes con shadowing
+- `src/symbols.h`, `src/symbols.c`: tipos y valores en runtime
 - `docs/reglas_c_minus_minus.md`: documento con reglas del lenguaje
-- `docs/desafio_ambitos_shadowing.md`: reporte del desafio de investigacion
 - `examples/`: archivos de ejemplo y pruebas
 - `Makefile`: compilacion y ejecucion
 
@@ -31,7 +36,12 @@ Tambien puedes usar:
 make run
 ```
 
-## Sintaxis base de C--
+## Ejecutar pruebas
+```bash
+make test
+```
+
+## Sintaxis base de C-- (variables, bloques y print)
 ```cmm
 int edad = 20;
 float promedio = 90.5;
@@ -49,13 +59,32 @@ print(edad);
 print("Edad global: " + edad);
 ```
 
+## Sintaxis de funciones
+```cmm
+func add(a:int, b:int) -> int {
+	return a + b;
+}
+
+int x = add(2, 3);
+print(x);
+```
+
+## Shadowing esperado
+```cmm
+int x = 10;
+
+func f() -> int {
+	int x = 20;
+	return x;
+}
+
+print(x);   // 10
+print(f()); // 20
+print(x);   // 10
+```
+
 ## Notas
 - Cada sentencia termina con `;`.
-- Tambien existen sentencias de bloque con `{` y `}`.
-- Se validan errores semanticos basicos (redeclaracion en el mismo ambito, variable no declarada, tipo incompatible, etc.).
-- Esta base esta pensada para crecer en futuras entregas (if, while, funciones, comparaciones, etc.).
-
-## Planes para siguiente version de C-Minus
-- Comparaciones y operadores logicos: permitir expresiones condicionales reales para toma de decisiones.
-- Sentencias if/else: ejecutar bloques en funcion de condiciones booleanas.
-- Ciclos while y for: agregar repeticion controlada para programas mas completos, entre otras cosas.
+- Se soportan bloques con `{` y `}` y scopes de funcion.
+- Las funciones se registran en un primer pase para permitir llamadas aunque la declaracion aparezca despues.
+- Reglas semanticas validadas: redeclaracion en el mismo ambito, variable no declarada/no inicializada, tipo incompatible y division por cero.

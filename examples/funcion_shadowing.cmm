@@ -1,0 +1,10 @@
+int x = 10;
+
+func f() -> int {
+    int x = 20;
+    return x;
+}
+
+print(x);
+print(f());
+print(x);

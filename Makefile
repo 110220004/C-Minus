@@ -1,14 +1,17 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -pedantic -O2
 TARGET = cmm
-SRC = src/main.c
+SRC = src/main.c src/ast.c src/interpreter.c src/scope.c src/symbols.c
 TEST_OK = \
 	examples/programa_basico.cmm \
 	examples/ejemplo_aritmetica.cmm \
 	examples/ejemplo_tipos.cmm \
 	examples/ejemplo_conversion.cmm \
 	examples/ejemplo_shadowing_simple.cmm \
-	examples/ejemplo_shadowing_3_niveles.cmm
+	examples/ejemplo_shadowing_3_niveles.cmm \
+	examples/funcion_return_basico.cmm \
+	examples/funcion_shadowing.cmm \
+	examples/funcion_param_shadowing.cmm
 TEST_ERR = \
 	examples/error_tipo.cmm \
 	examples/error_no_inicializada.cmm \
